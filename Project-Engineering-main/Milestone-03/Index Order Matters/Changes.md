@@ -23,4 +23,4 @@ Query execution time was significantly reduced
 Overall efficiency improved, especially for queries filtering by user_id
 
 This improvement is due to the Left-Most Prefix Rule, which states that PostgreSQL can only efficiently use a composite index if the query includes the leading (first) column(s) of the index. By placing user_id first, the index became fully usable for the query.
-this is my observation
+this is my observation,in this assignment
