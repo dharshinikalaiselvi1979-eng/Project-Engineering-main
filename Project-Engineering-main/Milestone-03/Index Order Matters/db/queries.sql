@@ -9,3 +9,4 @@ SELECT *
 FROM employees
 WHERE department = 'Engineering'
 AND salary >= 70000;
+SELECT * FROM employees WHERE tenant_id = currentUser.tenant_id;

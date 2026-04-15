@@ -6,10 +6,12 @@ CREATE TABLE tenants (
 CREATE TABLE employees (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100),
+    
     department VARCHAR(50),
     salary NUMERIC,
     hire_date DATE,
     tenant_id INT NOT NULL,
+    role VARCHAR(20) DEFAULT 'User'
     FOREIGN KEY (tenant_id) REFERENCES tenants(id)
 );
 
