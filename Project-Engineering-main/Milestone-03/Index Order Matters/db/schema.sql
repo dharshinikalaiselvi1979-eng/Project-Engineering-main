@@ -17,3 +17,7 @@ CREATE TABLE employees (
 
 CREATE INDEX idx_salary_department ON employees(salary, department);
 CREATE INDEX idx_employees_tenant ON employees(tenant_id);
+ALTER TABLE orders
+ADD CONSTRAINT fk_orders_customer
+FOREIGN KEY (customer_id)
+REFERENCES customers(id);
