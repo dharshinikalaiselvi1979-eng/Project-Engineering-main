@@ -81,3 +81,7 @@ npm run dev
 | GET | `/products/:id` | Must return 404 for unknown IDs |
 | POST | `/orders/purchase` | Body: `{ userId, productId }` — must use transaction |
 | GET | `/orders/:userId` | Returns all orders for a user |
+Ready to Stabilize the Chaos developers?
+You've inherited a fragile e-commerce API. It uses raw SQL strings, crashes when items aren't found, leaks database connections, and risks data corruption during checkout. Your job is to apply the Prisma patterns you've learned to stabilize the backend.
+
+This isn't just about making the code work; it's about anticipating edge cases, managing database connections responsibly, and protecting business data from partial writes.
