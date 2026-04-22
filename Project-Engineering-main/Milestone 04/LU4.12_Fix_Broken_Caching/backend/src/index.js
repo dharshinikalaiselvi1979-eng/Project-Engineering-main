@@ -8,8 +8,10 @@ const prisma = new PrismaClient();
 app.use(cors());
 app.use(express.json());
 
-/* ================= CACHE FIX ================= */
+/* ================= CACHE LAYER ================= */
+
 const cache = new Map();
+const DEFAULT_TTL = 60; // seconds
 
 function getCache(key) {
   const data = cache.get(key);
@@ -23,8 +25,8 @@ function getCache(key) {
   return data.value;
 }
 
-function setCache(key, value, ttl = 60) {
-  if (!value) return; // prevent null caching
+function setCache(key, value, ttl = DEFAULT_TTL) {
+  if (value === null || value === undefined) return;
 
   const expiry = Date.now() + ttl * 1000;
   cache.set(key, { value, expiry });
@@ -41,6 +43,7 @@ function clearCacheByPrefix(prefix) {
     }
   }
 }
+
 /* ============================================ */
 
 
@@ -51,13 +54,15 @@ app.get('/tasks', async (req, res) => {
 
     const cached = getCache(cacheKey);
     if (cached) {
-      console.log('Serving from cache');
+      console.log(`[CACHE HIT] ${cacheKey}`);
       return res.status(200).json(cached);
     }
 
+    console.log(`[CACHE MISS] ${cacheKey}`);
+
     const tasks = await prisma.task.findMany();
 
-    setCache(cacheKey, tasks, 60);
+    setCache(cacheKey, tasks, DEFAULT_TTL);
 
     res.status(200).json(tasks);
   } catch (err) {
@@ -70,13 +75,16 @@ app.get('/tasks', async (req, res) => {
 /* ================= GET TASK BY ID ================= */
 app.get('/tasks/:id', async (req, res) => {
   const { id } = req.params;
-  const cacheKey = `task:${id}`;
+  const cacheKey = `tasks:${id}`;
 
   try {
     const cached = getCache(cacheKey);
     if (cached) {
+      console.log(`[CACHE HIT] ${cacheKey}`);
       return res.status(200).json(cached);
     }
+
+    console.log(`[CACHE MISS] ${cacheKey}`);
 
     const task = await prisma.task.findUnique({
       where: { id: parseInt(id) }
@@ -86,7 +94,7 @@ app.get('/tasks/:id', async (req, res) => {
       return res.status(404).json({ error: 'Task not found' });
     }
 
-    setCache(cacheKey, task, 60);
+    setCache(cacheKey, task, DEFAULT_TTL);
 
     res.status(200).json(task);
   } catch (err) {
@@ -102,10 +110,14 @@ app.post('/tasks', async (req, res) => {
 
   try {
     const newTask = await prisma.task.create({
-      data: { title, description, price: parseFloat(price) }
+      data: {
+        title,
+        description,
+        price: parseFloat(price)
+      }
     });
 
-    // 🔥 FIX: invalidate list cache
+    // invalidate list cache
     clearCacheByPrefix('tasks');
 
     res.status(201).json(newTask);
@@ -125,8 +137,8 @@ app.delete('/tasks/:id', async (req, res) => {
       where: { id: parseInt(id) }
     });
 
-    // 🔥 FIX: invalidate both list + single
-    deleteCache(`task:${id}`);
+    // invalidate both single + list cache
+    deleteCache(`tasks:${id}`);
     clearCacheByPrefix('tasks');
 
     res.status(200).json({ message: 'Deleted successfully' });
@@ -138,8 +150,8 @@ app.delete('/tasks/:id', async (req, res) => {
 
 
 /* ================= START SERVER ================= */
+
 const PORT = 5000;
 app.listen(PORT, () => {
-  console.log(`Fixed Server running on http://localhost:${PORT}`);
+  console.log(`Server running on http://localhost:${PORT}`);
 });
-// project
