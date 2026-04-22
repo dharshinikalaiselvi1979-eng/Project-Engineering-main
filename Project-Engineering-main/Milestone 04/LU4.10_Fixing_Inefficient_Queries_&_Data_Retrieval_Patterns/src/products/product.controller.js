@@ -17,7 +17,7 @@ export async function listProducts(req, res) {
     // ✅ Field selection
     const fields = req.query.fields;
 
-    // ✅ Call service correctly
+    // ✅ Call service
     const result = await getProducts({
       page,
       limit,
@@ -30,8 +30,13 @@ export async function listProducts(req, res) {
   } catch (err) {
     console.error(err);
 
-    // ✅ Validation errors from service
-    res.status(400).json({ error: err.message });
+    // ✅ Return 400 only for validation errors
+    if (err.message.includes('Invalid')) {
+      return res.status(400).json({ error: err.message });
+    }
+
+    // ✅ Otherwise internal error
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 }
 

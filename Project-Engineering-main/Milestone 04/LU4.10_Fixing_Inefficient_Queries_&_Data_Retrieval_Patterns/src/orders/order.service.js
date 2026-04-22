@@ -1,5 +1,7 @@
 import { PrismaClient } from '@prisma/client';
-
+await prisma.order.findMany({
+  include: { user: true }
+});
 const prisma = new PrismaClient({
   log: ['query'], // keep this to prove only ONE query runs
 });
