@@ -1,31 +1,29 @@
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient({
-  log: ['query'], // Leaves query logging on to expose the N+1 crime
+  log: ['query'], // keep this to prove only ONE query runs
 });
 
+// ✅ FIXED: No N+1, single query with include
 export async function getOrders() {
   const orders = await prisma.order.findMany({
     orderBy: { createdAt: 'desc' },
+    include: {
+      user: true,
+    },
   });
 
-  // 💀 N+1 Loop - fetching users one by one
-  const ordersWithUsers = await Promise.all(
-    orders.map(async (order) => {
-      const user = await prisma.user.findUnique({
-        where: { id: order.userId },
-      });
-      return { ...order, user };
-    })
-  );
-
-  return ordersWithUsers;
+  return orders;
 }
 
+// ✅ FIXED: Also optimized single order fetch
 export async function getOrderById(id) {
-  const order = await prisma.order.findUnique({ where: { id } });
-  if (!order) return null;
+  const order = await prisma.order.findUnique({
+    where: { id },
+    include: {
+      user: true,
+    },
+  });
 
-  const user = await prisma.user.findUnique({ where: { id: order.userId } });
-  return { ...order, user };
+  return order;
 }
