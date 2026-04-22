@@ -1,11 +1,22 @@
 const prisma = require('../prisma/client');
 
-// ✅ PURCHASE ITEM (FIXED)
+// ✅ PURCHASE ITEM (FINAL VERSION)
 async function purchaseItem(req, res) {
   try {
-    const { userId, productId } = req.body;
+    const { userId, productId, quantity } = req.body;
 
-    // 🔍 Check product exists
+    // 🔹 Validation
+    if (!userId || !productId || !quantity) {
+      return res.status(400).json({ error: "userId, productId, quantity required" });
+    }
+
+    if (quantity <= 0) {
+      return res.status(400).json({ error: "Invalid quantity" });
+    }
+
+    console.log("Purchase:", { userId, productId, quantity });
+
+    // 🔹 Find product
     const product = await prisma.product.findUnique({
       where: { id: Number(productId) }
     });
@@ -14,52 +25,60 @@ async function purchaseItem(req, res) {
       return res.status(404).json({ error: "Product not found" });
     }
 
-    // 🔍 Check stock
-    if (product.stock < 1) {
-      return res.status(400).json({ error: "Out of stock" });
+    if (!product.isActive) {
+      return res.status(400).json({ error: "Product is not available" });
     }
 
-    // ✅ TRANSACTION (VERY IMPORTANT)
-    const result = await prisma.$transaction(async (tx) => {
-      // 1. Create Order
-      const order = await tx.order.create({
+    if (product.stock < quantity) {
+      return res.status(400).json({ error: "Not enough stock" });
+    }
+
+    // ✅ TRANSACTION
+    const order = await prisma.$transaction(async (tx) => {
+      const createdOrder = await tx.order.create({
         data: {
           userId: Number(userId),
-          totalAmount: product.price,
+          totalAmount: product.price * quantity,
           items: {
             create: [
               {
                 productId: product.id,
-                quantity: 1,
+                quantity: quantity,
                 price: product.price
               }
             ]
           }
         },
-        include: { items: true }
+        include: {
+          items: true
+        }
       });
 
-      // 2. Update stock
       await tx.product.update({
         where: { id: product.id },
         data: {
           stock: {
-            decrement: 1
+            decrement: quantity
           }
         }
       });
 
-      return order;
+      return createdOrder;
     });
 
-    res.status(201).json({ order: result });
+    res.status(201).json({
+      success: true,
+      message: "Order placed successfully",
+      data: order
+    });
 
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error(err);
+    res.status(500).json({ error: "Checkout failed" });
   }
 }
 
-// ✅ GET ORDERS BY USER (WITH ITEMS)
+// ✅ GET ORDERS BY USER
 async function getOrdersByUser(req, res) {
   try {
     const userId = Number(req.params.userId);
@@ -75,9 +94,15 @@ async function getOrdersByUser(req, res) {
       }
     });
 
-    res.json(orders);
+    res.json({
+      success: true,
+      count: orders.length,
+      data: orders
+    });
+
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error(err);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 }
 

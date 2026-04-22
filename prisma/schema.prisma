@@ -1,36 +1,52 @@
-generator client {
-  provider = "prisma-client-js"
-}
+model Product {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  price       Float
+  category    String
+  stock       Int      @default(0)
+  imageUrl    String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  orderItems  OrderItem[]
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String   @unique
-  orders    Order[]
-  createdAt DateTime @default(now())
-}
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String   @unique
+  passwordHash String
+  avatarUrl    String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-model Product {
-  id     Int     @id @default(autoincrement())
-  name   String
-  price  Float
-  stock  Int     @default(0) 
-  // 🚨 TASK 02 — stock field is intentionally missing.
-  // Add it here before running the migration.
-  orders Order[]
+  orders       Order[]
 }
 
 model Order {
-  id        Int      @id @default(autoincrement())
-  userId    Int
+  id          Int         @id @default(autoincrement())
+  userId      Int
+  status      String      @default("pending")
+  totalAmount Float
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  user        User        @relation(fields: [userId], references: [id])
+  items       OrderItem[]
+}
+
+model OrderItem {
+  id        Int     @id @default(autoincrement())
+  orderId   Int
   productId Int
-  quantity  Int      @default(1)
-  user      User     @relation(fields: [userId], references: [id])
-  product   Product  @relation(fields: [productId], references: [id])
-  createdAt DateTime @default(now())
+  quantity  Int
+  price     Float
+
+  order     Order   @relation(fields: [orderId], references: [id])
+  product   Product @relation(fields: [productId], references: [id])
+
+  @@unique([orderId, productId])
 }
