@@ -19,13 +19,17 @@ async function getProductById(req, res) {
     const product = await prisma.product.findUnique({
       where: { id }
     });
+    
 
     // ✅ NULL SAFETY (VERY IMPORTANT)
     if (!product) {
       return res.status(404).json({ error: "Product not found" });
     }
 
-    res.json(product); // return full product
+    res.json({
+  success: true,
+  data: products
+}); // return full product
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
