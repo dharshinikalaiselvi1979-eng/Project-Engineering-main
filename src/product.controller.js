@@ -30,5 +30,6 @@ async function getProductById(req, res) {
     res.status(500).json({ error: err.message });
   }
 }
+// this is my project
 
 module.exports = { getProducts, getProductById };
