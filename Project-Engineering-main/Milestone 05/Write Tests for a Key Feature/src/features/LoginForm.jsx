@@ -1,80 +1,104 @@
-import React, { useState } from 'react';
-import { useLogin } from '../hooks/useLogin';
-import Button from '../components/Button';
-import ErrorMessage from '../components/ErrorMessage';
-import { Mail, Lock, LogIn } from 'lucide-react';
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import LoginForm from '../LoginForm'
+import { useLogin } from '../../hooks/useLogin'
 
-const LoginForm = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const { handleLogin, isLoading, error } = useLogin();
+jest.mock('../../hooks/useLogin')
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    handleLogin({ email, password });
-  };
+describe('LoginForm', () => {
+  describe('happy path', () => {
+    it('should render email, password and submit button', () => {
+      useLogin.mockReturnValue({
+        handleLogin: jest.fn(),
+        isLoading: false,
+        error: null,
+      })
 
-  return (
-    <section className="w-full max-w-md bg-white/5 border border-white/10 p-8 rounded-3xl backdrop-blur-md shadow-2xl">
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-white mb-2">Welcome Back</h1>
-        <p className="text-slate-400">Please enter your details to sign in.</p>
-      </div>
+      render(<LoginForm />)
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="space-y-2">
-          <label htmlFor="email" className="block text-sm font-medium text-slate-300 ml-1">
-            Email
-          </label>
-          <div className="relative group">
-            <Mail className="absolute left-3 top-3 w-5 h-5 text-slate-500 group-focus-within:text-primary-400 transition-colors" />
-            <input
-              id="email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 bg-slate-900/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all"
-              placeholder="name@company.com"
-            />
-          </div>
-        </div>
+      expect(screen.getByLabelText(/email/i)).toBeInTheDocument()
+      expect(screen.getByLabelText(/password/i)).toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: /sign in/i })
+      ).toBeInTheDocument()
+    })
 
-        <div className="space-y-2">
-          <label htmlFor="password" className="block text-sm font-medium text-slate-300 ml-1">
-            Password
-          </label>
-          <div className="relative group">
-            <Lock className="absolute left-3 top-3 w-5 h-5 text-slate-500 group-focus-within:text-primary-400 transition-colors" />
-            <input
-              id="password"
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 bg-slate-900/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all"
-              placeholder="••••••••"
-            />
-          </div>
-        </div>
+    it('should call handleLogin with email and password on submit', async () => {
+      const mockLogin = jest.fn()
 
-        {error && (
-          <div className="pt-2 animate-in fade-in slide-in-from-top-1">
-            <ErrorMessage message={error} />
-          </div>
-        )}
+      useLogin.mockReturnValue({
+        handleLogin: mockLogin,
+        isLoading: false,
+        error: null,
+      })
 
-        <div className="pt-4">
-          <Button
-            label="Sign In"
-            type="submit"
-            loading={isLoading}
-            className="w-full py-4 text-lg"
-          />
-        </div>
-      </form>
-    </section>
-  );
-};
+      render(<LoginForm />)
 
-export default LoginForm;
+      await userEvent.type(screen.getByLabelText(/email/i), 'test@mail.com')
+      await userEvent.type(screen.getByLabelText(/password/i), '123456')
+
+      await userEvent.click(
+        screen.getByRole('button', { name: /sign in/i })
+      )
+
+      expect(mockLogin).toHaveBeenCalledWith({
+        email: 'test@mail.com',
+        password: '123456',
+      })
+    })
+  })
+
+  describe('failure cases', () => {
+    it('should display error message when error exists', () => {
+      useLogin.mockReturnValue({
+        handleLogin: jest.fn(),
+        isLoading: false,
+        error: 'Invalid credentials',
+      })
+
+      render(<LoginForm />)
+
+      expect(
+        screen.getByText(/invalid credentials/i)
+      ).toBeInTheDocument()
+    })
+
+    it('should disable button and show loading text when loading', () => {
+      useLogin.mockReturnValue({
+        handleLogin: jest.fn(),
+        isLoading: true,
+        error: null,
+      })
+
+      render(<LoginForm />)
+
+      const button = screen.getByRole('button')
+
+      expect(button).toBeDisabled()
+      expect(button).toHaveTextContent(/loading/i)
+    })
+  })
+
+  describe('edge cases', () => {
+    it('should call handleLogin even if fields are empty (no validation here)', async () => {
+      const mockLogin = jest.fn()
+
+      useLogin.mockReturnValue({
+        handleLogin: mockLogin,
+        isLoading: false,
+        error: null,
+      })
+
+      render(<LoginForm />)
+
+      await userEvent.click(
+        screen.getByRole('button', { name: /sign in/i })
+      )
+
+      expect(mockLogin).toHaveBeenCalledWith({
+        email: '',
+        password: '',
+      })
+    })
+  })
+})

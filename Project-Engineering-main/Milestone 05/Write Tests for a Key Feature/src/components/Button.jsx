@@ -1,32 +1,67 @@
-import React from 'react';
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import Button from '../Button'
 
-const Button = ({ 
-  label, 
-  onClick, 
-  disabled = false, 
-  loading = false,
-  type = "button",
-  className = "" 
-}) => {
-  const handleClick = (e) => {
-    if (disabled || loading) return;
-    if (onClick) onClick(e);
-  };
+describe('Button', () => {
+  describe('happy path', () => {
+    // Protects against label not rendering
+    it('should render button with correct label', () => {
+      render(<Button label="Click Me" />)
 
-  return (
-    <button
-      type={type}
-      disabled={disabled || loading}
-      onClick={handleClick}
-      className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 
-        ${disabled || loading 
-          ? 'bg-slate-700 text-slate-400 cursor-not-allowed' 
-          : 'bg-primary-600 hover:bg-primary-500 text-white active:scale-95 shadow-lg shadow-primary-500/20'} 
-        ${className}`}
-    >
-      {loading ? 'Loading...' : label}
-    </button>
-  );
-};
+      const button = screen.getByRole('button', { name: /click me/i })
+      expect(button).toBeInTheDocument()
+    })
 
-export default Button;
+    // Protects against click handler breaking
+    it('should call onClick when clicked', async () => {
+      const handleClick = jest.fn()
+
+      render(<Button label="Click Me" onClick={handleClick} />)
+
+      const button = screen.getByRole('button', { name: /click me/i })
+      await userEvent.click(button)
+
+      expect(handleClick).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('edge cases', () => {
+    // Protects against disabled state regression
+    it('should not call onClick when disabled', async () => {
+      const handleClick = jest.fn()
+
+      render(<Button label="Click Me" onClick={handleClick} disabled />)
+
+      const button = screen.getByRole('button', { name: /click me/i })
+
+      expect(button).toBeDisabled()
+
+      await userEvent.click(button)
+
+      expect(handleClick).not.toHaveBeenCalled()
+    })
+
+    // 🔥 IMPORTANT (matches your component logic)
+    it('should show loading text and disable button when loading', () => {
+      render(<Button label="Submit" loading />)
+
+      const button = screen.getByRole('button')
+
+      expect(button).toBeDisabled()
+      expect(button).toHaveTextContent(/loading/i)
+    })
+
+    // Extra safety: loading prevents clicks
+    it('should not call onClick when loading', async () => {
+      const handleClick = jest.fn()
+
+      render(<Button label="Submit" onClick={handleClick} loading />)
+
+      const button = screen.getByRole('button')
+
+      await userEvent.click(button)
+
+      expect(handleClick).not.toHaveBeenCalled()
+    })
+  })
+})

@@ -1,16 +1,41 @@
-import React from 'react';
-import { PackageOpen } from 'lucide-react';
+import { render, screen } from '@testing-library/react'
+import EmptyState from '../EmptyState'
 
-const EmptyState = ({ title, message }) => {
-  return (
-    <div className="flex flex-col items-center justify-center p-12 text-center bg-white/5 border border-white/10 rounded-2xl max-w-lg mx-auto backdrop-blur-sm">
-      <div className="mb-6 p-4 bg-primary-900/40 rounded-full border border-primary-500/10">
-        <PackageOpen className="w-12 h-12 text-primary-400" />
-      </div>
-      <h3 className="text-xl font-bold text-white mb-2">{title}</h3>
-      <p className="text-slate-400 max-w-xs">{message}</p>
-    </div>
-  );
-};
+describe('EmptyState', () => {
+  describe('happy path', () => {
+    // Protects against title not rendering
+    it('should render the title text', () => {
+      render(
+        <EmptyState 
+          title="No Orders" 
+          message="You have no orders yet" 
+        />
+      )
 
-export default EmptyState;
+      expect(screen.getByText(/no orders/i)).toBeInTheDocument()
+    })
+
+    // Protects against message not rendering
+    it('should render the message text', () => {
+      render(
+        <EmptyState 
+          title="No Orders" 
+          message="You have no orders yet" 
+        />
+      )
+
+      expect(screen.getByText(/you have no orders yet/i)).toBeInTheDocument()
+    })
+  })
+
+  describe('edge cases', () => {
+    // Protects against missing props breaking UI
+    it('should render without crashing when props are empty', () => {
+      render(<EmptyState title="" message="" />)
+
+      // Just checking component still renders
+      const container = screen.getByText('', { selector: 'h3' })
+      expect(container).toBeInTheDocument()
+    })
+  })
+})

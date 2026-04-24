@@ -1,25 +1,56 @@
-import React from 'react';
-import { AlertCircle, RefreshCw } from 'lucide-react';
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import ErrorMessage from '../ErrorMessage'
 
-const ErrorMessage = ({ message, onRetry }) => {
-  return (
-    <div className="flex flex-col items-center gap-4 p-6 bg-red-500/10 border border-red-500/20 rounded-xl max-w-md mx-auto">
-      <div className="flex items-center gap-3">
-        <AlertCircle className="w-6 h-6 text-red-400 shrink-0" />
-        <p className="text-red-200 font-medium">{message}</p>
-      </div>
-      
-      {onRetry && (
-        <button
-          onClick={onRetry}
-          className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg font-semibold transition-all shadow-lg shadow-red-900/40 active:scale-95 text-sm"
-        >
-          <RefreshCw className="w-4 h-4" />
-          Try again
-        </button>
-      )}
-    </div>
-  );
-};
+describe('ErrorMessage', () => {
+  describe('happy path', () => {
+    // Protects against error text not rendering
+    it('should render the error message', () => {
+      render(<ErrorMessage message="Something went wrong" />)
 
-export default ErrorMessage;
+      expect(
+        screen.getByText(/something went wrong/i)
+      ).toBeInTheDocument()
+    })
+
+    // Protects retry functionality breaking
+    it('should render retry button and call onRetry when clicked', async () => {
+      const handleRetry = jest.fn()
+
+      render(
+        <ErrorMessage 
+          message="Error occurred" 
+          onRetry={handleRetry} 
+        />
+      )
+
+      const button = screen.getByRole('button', { name: /try again/i })
+
+      expect(button).toBeInTheDocument()
+
+      await userEvent.click(button)
+
+      expect(handleRetry).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('edge cases', () => {
+    // Protects against button rendering when it shouldn't
+    it('should not render retry button if onRetry is not provided', () => {
+      render(<ErrorMessage message="Error occurred" />)
+
+      const button = screen.queryByRole('button', { name: /try again/i })
+
+      expect(button).not.toBeInTheDocument()
+    })
+
+    // Extra safety: empty message still renders container
+    it('should render even if message is empty', () => {
+      render(<ErrorMessage message="" />)
+
+      // Just checking component doesn't crash
+      const container = screen.getByText('', { selector: 'p' })
+      expect(container).toBeInTheDocument()
+    })
+  })
+})
