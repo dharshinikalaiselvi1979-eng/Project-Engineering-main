@@ -16,3 +16,4 @@ export default function ErrorMessage({ message, onRetry }) {
     </div>
   )
 }
+// added new feature to new commit 

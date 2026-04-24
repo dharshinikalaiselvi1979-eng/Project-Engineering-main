@@ -1,47 +1,51 @@
-import { createContext, useState } from 'react'
+import { createContext, useContext, useState, useEffect } from "react";
 
-export const AuthContext = createContext(null)
+const AuthContext = createContext();
 
-/**
- * AuthProvider provides the authentication state to the application.
- * Note: Submitting multiple bugs here for the student to find.
- */
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null)
-  const [token, setToken] = useState(null)
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(null);
 
-  // BUG 2: Login handles state but fails to persist the session to localStorage
-  const login = (userData, fakeToken) => {
-    setUser(userData)
-    setToken(fakeToken)
-    
-    // ❌ Missing: localStorage.setItem('authToken', fakeToken)
-    // ❌ Missing: localStorage.setItem('authUser', JSON.stringify(userData))
-    console.log('✅ User logged in:', userData.email)
-  }
+  // ✅ Sync from localStorage on app load
+  useEffect(() => {
+    const storedToken = localStorage.getItem("authToken");
+    const storedUser = localStorage.getItem("authUser");
 
-  // BUG 3 (Part 2): Logout clears state but may leave data in storage or has issues
+    if (storedToken && storedUser) {
+      setToken(storedToken);
+      setUser(JSON.parse(storedUser));
+    }
+  }, []);
+
+  // ✅ LOGIN
+  const login = (userData, token) => {
+    setUser(userData);
+    setToken(token);
+
+    localStorage.setItem("authToken", token);
+    localStorage.setItem("authUser", JSON.stringify(userData));
+  };
+
+  // ✅ LOGOUT
   const logout = () => {
-    setUser(null)
-    setToken(null)
-    // ❌ Missing: localStorage.removeItem('authToken')
-    // ❌ Missing: localStorage.removeItem('authUser')
-    console.log('🚪 User logged out')
-  }
+    setUser(null);
+    setToken(null);
 
-  // BUG 2 (Part 2): Missing useEffect to load user from localStorage on mount
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("authUser");
+  };
 
-  const value = {
-    user,
-    token,
-    isAuthenticated: !!token, // Derived state for Bug 3
-    login,
-    logout
-  }
+  // ✅ DERIVED STATE
+  const isAuthenticated = !!token;
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider
+      value={{ user, token, isAuthenticated, login, logout }}
+    >
       {children}
     </AuthContext.Provider>
-  )
-}
+  );
+};
+
+// ✅ HOOK
+export const useAuth = () => useContext(AuthContext);
