@@ -24,3 +24,4 @@ const protect = async (req, res, next) => {
 
 export { protect };
 // nciwijiwdowkd
+// This middleware checks for a JWT token in the Authorization header, verifies it, and attaches the user information to the request object if valid. If the token is missing or invalid, it responds with a 401 Unauthorized status.
