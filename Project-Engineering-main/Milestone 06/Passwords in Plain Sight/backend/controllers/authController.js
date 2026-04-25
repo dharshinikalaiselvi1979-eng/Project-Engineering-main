@@ -73,3 +73,4 @@ export const getProfile = async (req, res) => {
     res.status(500).json({ message: 'Server error' })
   }
 }
+// made changes for hashing and comparing passwords securely using bcryptjs. The signup function now hashes the password before storing it in the database, and the login function compares the provided password with the hashed password using bcrypt's compare method.
