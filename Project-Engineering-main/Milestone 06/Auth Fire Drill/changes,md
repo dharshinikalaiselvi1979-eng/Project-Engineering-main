@@ -1,0 +1,103 @@
+Changes.md
+Overview
+
+This document captures the security vulnerabilities identified in the Fragments collaborative storytelling platform during the investigation phase. The issues are interconnected across authentication and authorization layers, leading to privilege escalation, broken access control, and session misuse.
+
+1. Hardcoded JWT Secret & No Expiry
+Issue
+The JWT secret is hardcoded in server/auth/jwt.js.
+Tokens are signed without an expiry (expiresIn).
+Impact
+Anyone with access to the source code can generate valid tokens.
+Stolen tokens remain valid indefinitely.
+No way to enforce session expiration → long-term account compromise.
+Evidence
+Found string literal used as JWT secret.
+Tokens remain valid even after long periods.
+2. Role Missing from JWT Payload
+Issue
+The JWT payload (in server/routes/auth.js) does not include user role.
+Impact
+Backend cannot reliably determine user permissions.
+Role-based access control becomes ineffective.
+Opens path for privilege escalation when combined with frontend manipulation.
+Evidence
+Decoded JWT only contains user ID/email, no role field.
+3. Frontend Stores Role in localStorage
+Issue
+User role is stored in localStorage (AuthContext.jsx).
+Impact
+Role can be manually modified via browser DevTools.
+UI updates to reflect elevated permissions (e.g., admin buttons visible).
+Creates a false sense of authorization enforcement.
+Exploit Demonstration
+Changed role from reader → admin in DevTools.
+Admin UI controls appeared without backend validation.
+4. Missing Role Checks on Critical Endpoints
+Issue
+
+Endpoints in server/routes/fragments.js lack proper role validation:
+
+POST /api/fragments
+PUT /api/fragments/:id
+POST /api/fragments/:id/approve
+DELETE /api/fragments/:id
+Impact
+Any authenticated user can perform restricted actions.
+Users can:
+Approve content without curator role
+Delete fragments without admin rights
+Edit others’ content
+Root Cause
+Either:
+No role checks exist, OR
+Role checks fail due to missing role in JWT
+5. CSRF Vulnerability
+Issue
+CORS policy is overly permissive (server/index.js).
+No CSRF protection implemented for state-changing requests.
+Impact
+Malicious websites can send authenticated requests using victim’s session.
+Leads to:
+Unauthorized fragment creation
+Forced approvals or deletions
+Evidence
+Requests succeed without CSRF tokens.
+No origin restriction enforced.
+6. Logout Does Not Invalidate Token
+Issue
+Logout only removes token from localStorage (LogoutButton.jsx).
+Token remains valid on the server.
+Impact
+Stolen/copied tokens can still be used after logout.
+No server-side session invalidation.
+Exploit Demonstration
+Copied JWT before logout.
+Used it in Postman after logout → still authenticated successfully.
+Interconnection of Issues
+
+These vulnerabilities are not isolated:
+
+Missing role in JWT + role stored in localStorage → easy privilege escalation
+No role checks + manipulated role → full access to protected actions
+Hardcoded secret + no expiry → persistent unauthorized access
+No CSRF protection → attackers can exploit active sessions
+No logout invalidation → compromised tokens remain usable
+
+Together, they create a completely broken access control system.
+
+Summary
+
+The application suffers from:
+
+Broken authentication (JWT mismanagement)
+Broken authorization (missing role enforcement)
+Client-side trust issues (localStorage role)
+Session security flaws (no expiry, no invalidation)
+Cross-site attack exposure (CSRF)
+
+These combined flaws allow attackers to:
+
+Escalate privileges
+Perform unauthorized actions
+Maintain persistent access
