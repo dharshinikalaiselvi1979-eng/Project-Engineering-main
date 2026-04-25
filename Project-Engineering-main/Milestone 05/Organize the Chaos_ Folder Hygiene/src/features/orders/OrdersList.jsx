@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getOrders } from './ordersService';
+import { getOrders } from '../../services/ordersService'
 import OrderCard from './OrderCard';
 import EmptyState from './EmptyState';
 import Spinner from './Spinner';

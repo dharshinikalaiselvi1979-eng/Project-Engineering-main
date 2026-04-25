@@ -3,7 +3,7 @@ import { ShoppingCart } from 'lucide-react';
 import { formatCurrency } from './formatCurrency';
 import { truncateText } from './truncateText';
 import Button from './Button';
-
+import { useProducts } from './useProducts'
 const ProductCard = ({ product, onAddToCart }) => {
   return (
     <div className="bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-xl hover:shadow-slate-200 transition-all border border-slate-100 group flex flex-col h-full">

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useLogin } from './useLogin';
 import Button from './Button';
 import Spinner from './Spinner';
+import { login } from '../../services/loginService'
 
 const LoginForm = ({ onLoginSuccess }) => {
   const [email, setEmail] = useState('');

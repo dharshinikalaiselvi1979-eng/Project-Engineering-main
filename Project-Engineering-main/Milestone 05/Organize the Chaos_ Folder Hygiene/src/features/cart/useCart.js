@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getCartFromLocal, saveCartLocally } from './cartService';
+import { getCartFromLocal, saveCartLocally } from '../../services/cartService';
 
 // This is a simple hook that would normally be used with a Context,
 // but in this "simplified" flat structure, we'll keep it as a hook
